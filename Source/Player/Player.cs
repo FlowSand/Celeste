@@ -2108,7 +2108,7 @@ namespace Celeste
 
         #endregion
 
-        #region Ducking
+        #region Ducking …¡±‹
 
         public bool Ducking
         {
@@ -3353,7 +3353,7 @@ namespace Celeste
 
         #endregion
 
-        #region Dash State
+        #region Dash State ≥Â¥Ã
 
         public int StartDash()
         {
