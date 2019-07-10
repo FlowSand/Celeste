@@ -544,6 +544,7 @@ namespace Celeste.Pico8
             }
         }
         
+        //弹簧
         public class spring : ClassicObject
         {
             public int hide_in = 0;
@@ -607,6 +608,7 @@ namespace Celeste.Pico8
             obj.hide_in = 15;
         }
         
+        //气球
         public class balloon : ClassicObject
         {
             float offset;
@@ -1202,8 +1204,8 @@ namespace Celeste.Pico8
 
         public class ClassicObject
         {
-            public Classic G;
-            public Emulator E;
+            public Classic G;   //游戏世界
+            public Emulator E;  //模拟器
 
             public int type;
             public bool collideable = true;
@@ -1230,6 +1232,7 @@ namespace Celeste.Pico8
 
             public virtual void draw()
             {
+                //绘制精灵
                 if (spr > 0)
                     E.spr(spr, x, y, 1, 1, flipX, flipY);
             }
@@ -1469,6 +1472,7 @@ namespace Celeste.Pico8
 
         public void Update()
         {
+            //帧、秒、分计算
             frames = ((frames + 1) % 30);
             if (frames == 0 && level_index() < 30)
             {
@@ -1503,6 +1507,7 @@ namespace Celeste.Pico8
                     E.camera(-2 + E.rnd(5), -2 + E.rnd(5));
             }
 
+            // 重开房间计时器
             // restart(soon)
             if (will_restart && delay_restart > 0)
             {
@@ -1526,6 +1531,7 @@ namespace Celeste.Pico8
                 }
             }
 
+            // 检测删除物体标志
             // C# NEW CODE:
             // clear deleted objects
             while (objects.IndexOf(null) >= 0)
@@ -1701,6 +1707,7 @@ namespace Celeste.Pico8
             obj.draw();
         }
 
+        //绘制时间戳
         private void draw_time(int x, int y)
         {
             var s = seconds;
