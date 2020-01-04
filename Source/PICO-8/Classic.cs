@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
 namespace Celeste.Pico8
@@ -88,8 +88,9 @@ namespace Celeste.Pico8
 
         public void Init(Emulator emulator)
         {
+            //获得模拟器引用，调用一些工具函数
             E = emulator;
-
+            //初始化全局变量
             room = new Point(0, 0);
             objects = new List<ClassicObject>();
             freeze = 0;
@@ -135,7 +136,7 @@ namespace Celeste.Pico8
                 });
 
             dead_particles = new List<DeadParticle>();
-
+            //加载标题界面
             title_screen();
         }
 
@@ -161,7 +162,7 @@ namespace Celeste.Pico8
             E.music(0, 0, 7);
             load_room(0, 0);
         }
-
+        //关卡索引 = roomX % 8 + roomY * 8
         private int level_index()
         {
             return room.X % 8 + room.Y * 8;
@@ -1207,16 +1208,16 @@ namespace Celeste.Pico8
             public Classic G;   //游戏世界
             public Emulator E;  //模拟器
 
-            public int type;
-            public bool collideable = true;
+            public int type;    //TypeCode
+            public bool collideable = true; //碰撞
             public bool solids = true;
-            public float spr;
-            public bool flipX;
+            public float spr;   //精灵
+            public bool flipX;  //翻转
             public bool flipY;
-            public float x;
+            public float x;     //位置
             public float y;
-            public Rectangle hitbox = new Rectangle(0, 0, 8, 8);
-            public Vector2 spd = new Vector2(0, 0);
+            public Rectangle hitbox = new Rectangle(0, 0, 8, 8);    //碰撞框
+            public Vector2 spd = new Vector2(0, 0);     //速度
             public Vector2 rem = new Vector2(0, 0);
 
             public virtual void init(Classic g, Emulator e)
@@ -1250,13 +1251,14 @@ namespace Celeste.Pico8
             {
                 return G.ice_at(x + hitbox.X + ox, y + hitbox.Y + oy, hitbox.Width, hitbox.Height);
             }
-
+            // ox : Offset X
             public T collide<T>(int ox, int oy) where T : ClassicObject
             {
                 var type = typeof(T);
                 foreach (var other in G.objects)
                 {
                     if (other != null && other.GetType() == type && other != this && other.collideable &&
+                        //Other Pos + hitbox 偏移 + hitbox宽高
                         other.x + other.hitbox.X + other.hitbox.Width > x + hitbox.X + ox &&
                         other.y + other.hitbox.Y + other.hitbox.Height > y + hitbox.Y + oy &&
                         other.x + other.hitbox.X < x + hitbox.X + hitbox.Width + ox &&
@@ -1378,12 +1380,13 @@ namespace Celeste.Pico8
 
         #region room functions
 
+        //当前Room重开
         private void restart_room()
         {
             will_restart = true;
             delay_restart = 15;
         }
-
+        //读取下一房间
         private void next_room()
         {
             if (room.X == 2 && room.Y == 1)
@@ -1400,20 +1403,24 @@ namespace Celeste.Pico8
             else
                 load_room(room.X + 1, room.Y);
         }
-
+        //读取XY Room
         public void load_room(int x, int y)
         {
+            //重置钥匙和冲刺
             has_dashed = false;
             has_key = false;
 
+            //清空Object列表
             // remove existing objects
             for (int i = 0; i < objects.Count; i++)
                 objects[i] = null;
-
+            
+            //更新Room XY
             // current room
             room.X = x;
             room.Y = y;
 
+            //遍历Tile数组，根据TypeID生成Entity
             // entities
             for (int tx = 0; tx <= 15; tx ++)
             {
@@ -1455,7 +1462,7 @@ namespace Celeste.Pico8
                             else if (tile == 20)
                                 obj = new chest();
                         }
-
+                        //在指定位置生成Entity
                         if (obj != null)
                             init_object(obj, tx * 8, ty * 8, tile);
                     }
@@ -1481,6 +1488,7 @@ namespace Celeste.Pico8
                     minutes++;
             }
 
+            // music timer
             if (music_timer > 0)
             {
                 music_timer--;
@@ -1491,13 +1499,14 @@ namespace Celeste.Pico8
             if (sfx_timer > 0)
                 sfx_timer--;
 
+            // freeze停止逻辑Update：已帧为单位计数
             // cancel if freeze
             if (freeze > 0)
             {
                 freeze--;
                 return;
             }
-
+            // 屏幕抖动计时
             // screenshake
             if (shake > 0 && !Settings.Instance.DisableScreenShake)
             {
@@ -1519,6 +1528,7 @@ namespace Celeste.Pico8
                 }
             }
 
+            // Update房间所有Obj
             // update each object
             int length = objects.Count;
             for (var i = 0; i < length; i ++)
@@ -1537,6 +1547,7 @@ namespace Celeste.Pico8
             while (objects.IndexOf(null) >= 0)
                 objects.Remove(null);
 
+            // 主菜单界面按钮监听开始游戏
             // start game
             if (is_title())
             {
@@ -1722,21 +1733,22 @@ namespace Celeste.Pico8
 
         #region util
 
+        //钳制
         private float clamp(float val, float a, float b)
         {
             return E.max(a, E.min(b, val));
         }
-
+        //将val向target靠近amount个数值
         private float appr(float val, float target, float amount)
         {
             return (val > target ? E.max(val - amount, target) : E.min(val + amount, target));
         }
-
+        //浮点数符号位
         private int sign(float v)
         {
             return (v > 0 ? 1 : (v < 0 ? -1 : 0));
         }
-
+        //50%概率发生事件
         private bool maybe()
         {
             return E.rnd(1) < 0.5f;

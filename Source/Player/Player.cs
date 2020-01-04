@@ -137,6 +137,7 @@ namespace Celeste
 
         public const float WalkSpeed = 64f;
 
+        //状态机Code
         public const int StNormal = 0;
         public const int StClimb = 1;
         public const int StDash = 2;
@@ -602,6 +603,7 @@ namespace Celeste
 
         public override void Update()
         {
+            //无限耐力
             //Infinite Stamina variant
             if (SaveData.Instance.AssistMode && SaveData.Instance.Assists.InfiniteStamina)
                 Stamina = ClimbMaxStamina;
@@ -610,6 +612,7 @@ namespace Celeste
 
             //Vars       
             {
+                //草莓收集重置计时器
                 // strawb reset timer
                 StrawberryCollectResetTimer -= Engine.DeltaTime;
                 if (StrawberryCollectResetTimer <= 0)
@@ -630,6 +633,7 @@ namespace Celeste
                 if (JustRespawned && Speed != Vector2.Zero)
                     JustRespawned = false;
 
+                //接触地面（安全区）检测
                 //Get ground
                 if (StateMachine.State == StDreamDash)
                     onGround = OnSafeGround = false;
@@ -894,6 +898,7 @@ namespace Celeste
                     launchedTimer = 0;
             }
 
+            //劳累状态
             if (IsTired)
             {
                 Input.Rumble(RumbleStrength.Light, RumbleLength.Short);
@@ -2108,7 +2113,7 @@ namespace Celeste
 
         #endregion
 
-        #region Ducking ����
+        #region Ducking 闪避
 
         public bool Ducking
         {
@@ -2184,7 +2189,7 @@ namespace Celeste
 
         #endregion
 
-        #region Holding
+        #region Holding  抓取物体
 
         public Holdable Holding
         {
@@ -2356,8 +2361,10 @@ namespace Celeste
             }
         }
 
+        //检测水平碰撞
         private void OnCollideH(CollisionData data)
         {
+            //羽毛飞翔状态
             if (StateMachine.State == StStarFly)
             {
                 if (starFlyTimer < StarFlyEndNoBounceTime)
@@ -2371,6 +2378,7 @@ namespace Celeste
                 return;
             }
 
+            //梦境冲刺（最后一关上冲）
             if (StateMachine.State == StDreamDash)
                 return;
 
@@ -2704,6 +2712,7 @@ namespace Celeste
             return false;
         }
 
+        //当碰撞到边界时
         public void OnBoundsH()
         {
             Speed.X = 0;
@@ -2720,6 +2729,7 @@ namespace Celeste
                 StateMachine.State = StNormal;
         }
 
+        //被压扁时
         override protected void OnSquish(CollisionData data)
         {
             bool ducked = false;
@@ -2754,6 +2764,8 @@ namespace Celeste
         }
 
         #endregion
+
+
 
         #region Normal State
 
@@ -3353,7 +3365,7 @@ namespace Celeste
 
         #endregion
 
-        #region Dash State ���
+        #region Dash State 
 
         public int StartDash()
         {

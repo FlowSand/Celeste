@@ -265,6 +265,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
                 CreatePauseMenu();
             pauseFade = Calc.Approach(pauseFade, pauseMenu != null ? 0.75f : 0f, Engine.DeltaTime * 6f);
             
+            // Celeste锁帧60，而PCIO8锁帧30，此处dumb hack code目的是跳过一帧的Update
             // this is a pretty dumb hack but because Celeste is locked to 60fps
             // and PICO-8 runs at 30 ... we just skip every 2nd frame
             // the game buffers inputs so they wont get eaten
@@ -277,6 +278,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             if (!gameActive || gameDelay > 0)
                 return;
 
+            // 重建PCIO 开机序列
             // recreating the PICO-8 Boot Sequence
             if (booting)
             {
@@ -286,6 +288,8 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
                 gameFrame++;
                 var t = gameFrame - 20;
                 
+                //以下根据帧数刷新屏幕Color缓存
+
                 if (t == 1)
                 {
                     for (var y = 0; y < 128; y++)
@@ -369,11 +373,13 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             }
             else
             {
+                //逻辑帧update
                 gameFrame++;
                 game.Update();
 
                 if (game.freeze <= 0)
                 {
+                    // 绘制渲染帧
                     // draw
                     {
                         Engine.Graphics.GraphicsDevice.SetRenderTarget(buffer);
@@ -386,6 +392,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
                         Engine.Graphics.GraphicsDevice.SetRenderTarget(null);
                     }
 
+                    // 调色板切换（改变场景色调）
                     // do a palette swap
                     // this could be done with a shader but on a 128x128 screen ... I don't really care
                     if (paletteSwap.Count > 0)
@@ -439,6 +446,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             base.Render();
         }
 
+        //创建暂停界面逻辑
         public void CreatePauseMenu()
         {
             Audio.Play(Sfxs.ui_game_pause);
@@ -486,7 +494,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
                     Audio.EndSnapshot(snapshot);
                     Audio.Stop(bgSfx);
                     snapshot = null;
-
+                    //返回关卡场景
                     if (ReturnTo != null)
                     {
                         if (ReturnTo is Level)
@@ -497,6 +505,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
 
                         Engine.Scene = ReturnTo;
                     }
+                    //返回主菜单场景
                     else
                     {
                         Engine.Scene = new OverworldLoader(Overworld.StartMode.Titlescreen);
@@ -522,6 +531,9 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
 
         #region Emulator Methods
 
+        //NOTE：此处音乐资源可分为 BGM：长音乐  和 SFX：音效
+
+        //根据区域Index切换不同的BGM
         public void music(int index, int fade, int mask)
         {
             if (index == -1)
@@ -550,11 +562,13 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             }
         }
 
+        //播放音效
         public void sfx(int sfx)
         {
             Audio.Play("event:/classic/sfx" + sfx);
         }
 
+        //封装一些PCIO提供的数学方法
         public float rnd(float max)
         {
             return Calc.Random.NextFloat(max);
@@ -595,6 +609,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             return (float)Math.Cos((1 - a) * MathHelper.TwoPi);
         }
 
+        //玩家输入检测
         public bool btn(int index)
         {
             var aim = new Vector2(Input.MoveX, Input.MoveY);
@@ -625,16 +640,17 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             return Math.Sign(Input.GetAimVector((Facings)facing).Y);
         }
 
+        //查询Tilemap
         public int mget(int tx, int ty)
         {
             return tilemap[tx + ty * 128];
         }
-
+        //查询Tile mask是否符合
         public bool fget(int tile, int flag)
         {
             return tile < mask.Length && (mask[tile] & (1 << flag)) != 0;
         }
-
+        //设定相机位置
         public void camera()
         {
             offset = Vector2.Zero;
@@ -644,7 +660,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
         {
             offset = new Vector2((int)Math.Round(x), (int)Math.Round(y));
         }
-
+        //设定调色板
         public void pal()
         {
             paletteSwap.Clear();
@@ -658,7 +674,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             else
                 paletteSwap.Add(from, b);
         }
-
+        //填充矩形
         public void rectfill(float x, float y, float x2, float y2, float c)
         {
             var left = Math.Min(x, x2);
@@ -667,7 +683,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
             var height = Math.Max(y, y2) - top + 1;
             Draw.Rect(left, top, width, height, colors[((int)c) % 16]);
         }
-
+        //填充Rect
         public void circfill(float x, float y, float r, float c)
         {
             var color = colors[((int)c) % 16];
@@ -688,7 +704,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
                 Draw.Rect(x - 2, y - 2, 5, 5, color);
             }
         }
-
+        //屏幕输出文字
         public void print(string str, float x, float y, float c)
         {
             var left = x;
@@ -708,7 +724,7 @@ b302b211000000110092b100000000a3b1b1b1b1b1b10011111232110000b342000000a282125284
                 left += 4;
             }
         }
-
+        //绘制
         public void map(int mx, int my, int tx, int ty, int mw, int mh, int mask = 0)
         {
             for (int x = 0; x < mw; x++)
