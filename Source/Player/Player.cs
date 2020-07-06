@@ -299,10 +299,11 @@ namespace Celeste
         public Player(Vector2 position, PlayerSpriteMode spriteMode)
             : base(new Vector2((int)position.X, (int)position.Y))
         {
+            //设置深度和Tag
             Depth = Depths.Player;
             Tag = Tags.Persistent;
 
-            // sprite
+            //Sprite 和头发组件
             Sprite = new PlayerSprite(spriteMode);
             Add(Hair = new PlayerHair(Sprite));
             Add(Sprite);
@@ -313,13 +314,13 @@ namespace Celeste
             sweatSprite = GFX.SpriteBank.Create("player_sweat");
             Add(sweatSprite);
 
-            // physics
+            // physics （物理碰撞盒和碰撞委托方法）
             Collider = normalHitbox;
             hurtbox = normalHurtbox;
             onCollideH = OnCollideH;
             onCollideV = OnCollideV;
 
-            // states
+            // states （角色状态机）
             StateMachine = new StateMachine(23);
             StateMachine.SetCallbacks(StNormal, NormalUpdate, null, NormalBegin, NormalEnd);
             StateMachine.SetCallbacks(StClimb, ClimbUpdate, null, ClimbBegin, ClimbEnd);
@@ -346,7 +347,7 @@ namespace Celeste
             StateMachine.SetCallbacks(StAttract, AttractUpdate, null, AttractBegin, AttractEnd);
             Add(StateMachine);
 
-            // other stuff
+            // other stuff （零碎组件和变量初始化）
             Add(Leader = new Leader(new Vector2(0, -8)));
             lastAim = Vector2.UnitX;
             Facing = Facings.Right;
@@ -355,17 +356,18 @@ namespace Celeste
             Add(Light = new VertexLight(normalLightOffset, Color.White, 1f, 32, 64));
             Add(new WaterInteraction(() => { return StateMachine.State == StDash || StateMachine.State == StReflectionFall; }));
 
-            //Wind
+            //Wind  （风力影响组件）
             Add(new WindMover(WindMove));
-
+            //音源组件
             Add(wallSlideSfx = new SoundSource());
             Add(swimSurfaceLoopSfx = new SoundSource());
             
             Sprite.OnFrameChange = (anim) =>
             {
+                //精确配合动画帧播放音效
                 if (Scene != null && !Dead)
                 {
-                    // footsteps
+                    // footsteps （madline 脚步音效）
                     var frame = Sprite.CurrentAnimationFrame;
                     if ((anim.Equals(PlayerSprite.RunCarry) && (frame == 0 || frame == 6)) ||
                         (anim.Equals(PlayerSprite.RunFast) && (frame == 0 || frame == 6)) ||
@@ -381,7 +383,7 @@ namespace Celeste
                         if (landed != null)
                             Play(Sfxs.char_mad_footstep, SurfaceIndex.Param, landed.GetStepSoundIndex(this));
                     }
-                    // climbing (holds)
+                    // climbing (holds) （攀爬音效）
                     else if ((anim.Equals(PlayerSprite.ClimbUp) && (frame == 5)) ||
                         (anim.Equals(PlayerSprite.ClimbDown) && (frame == 5)))
                     {
@@ -393,6 +395,7 @@ namespace Celeste
                         Play(Sfxs.char_mad_campfire_stand);
                     else if (anim.Equals("sitDown") && frame == 12)
                         Play(Sfxs.char_mad_summit_sit);
+                    //冲撞方块音效
                     else if (anim.Equals("push") && (frame == 8 || frame == 15))
                         Dust.BurstFG(Position + new Vector2(-(int)Facing * 5, -1), new Vector2(-(int)Facing, -0.5f).Angle(), 1, 0);
                 }
@@ -400,6 +403,7 @@ namespace Celeste
 
             Sprite.OnLastFrame = (anim) =>
             {
+                //山之核心关卡 有0.2的概率播放mad_line 炎热、寒冷的动画及音效
                 if (Scene != null && !Dead && Sprite.CurrentAnimationID == "idle" && !level.InCutscene && idleTimer > 3f)
                 {
                     if (Calc.Random.Chance(0.2f))
@@ -428,26 +432,31 @@ namespace Celeste
                 }
             };
 
+            // idle动画改变时，停止对应的特殊音效播放
             // cancel special idle sounds if the anim changed
             Sprite.OnChange = (last, next) =>
             {
                 if ((last == "idleB" || last == "idleC") && next != null && !next.StartsWith("idle") && idleSfx != null)
                     Audio.Stop(idleSfx);
             };
-
+            //镜面反射组件
             Add(reflection = new MirrorReflection());
         }
 
+        //当角色被添加到场景时
         public override void Added(Scene scene)
         {
             base.Added(scene);
             level = SceneAs<Level>();
 
+            //初始化冲刺变量
             lastDashes = Dashes = MaxDashes;
 
+            //特殊场景处理角色初始朝向
             if (X > level.Bounds.Center.X && IntroType != IntroTypes.None)
                 Facing = Facings.Left;
 
+            //处理角色初始化在关卡时的动画表现
             switch (IntroType)
             {
                 case IntroTypes.Respawn:
@@ -487,9 +496,11 @@ namespace Celeste
                     StartTempleMirrorVoidSleep();
                     break;
             }
-            IntroType = IntroTypes.Transition;
+            IntroType = IntroTypes.Transition;  //重置
 
+            //初始化头发组件
             StartHair();
+
             PreviousPosition = Position;
         }
 
@@ -531,12 +542,14 @@ namespace Celeste
             var was = Sprite.RenderPosition;
             Sprite.RenderPosition = Sprite.RenderPosition.Floor();
 
+            //重生
             if (StateMachine.State == StIntroRespawn)
             {
                 DeathEffect.Draw(Center + deadOffset, Hair.Color, introEase);
             }
             else
             {
+                //羽毛飞舞
                 if (StateMachine.State != StStarFly)
                 {
                     if (IsTired && flash)
@@ -585,6 +598,7 @@ namespace Celeste
             Sprite.RenderPosition = was;
         }
 
+        //Debug绘制模式，只绘制受伤碰撞盒
         public override void DebugRender(Camera camera)
         {
             base.DebugRender(camera);
@@ -618,6 +632,7 @@ namespace Celeste
                 if (StrawberryCollectResetTimer <= 0)
                     StrawberryCollectIndex = 0;
 
+                // Idle计时器：当维持此状态超过一定时间用来播放特殊动画
                 // idle timer
                 idleTimer += Engine.DeltaTime;
                 if (level != null && level.InCutscene)
@@ -1116,7 +1131,9 @@ namespace Celeste
 
         #endregion
 
-        #region Hair & Sprite
+
+
+        #region Hair & Sprite 
 
         private void StartHair()
         {
@@ -1125,9 +1142,10 @@ namespace Celeste
             UpdateHair(true);
         }
 
+        //更新头发组件参数
         public void UpdateHair(bool applyGravity)
         {
-            // color
+            // color 计算头发颜色变化
             if (StateMachine.State == StStarFly)
             {
                 Hair.Color = Sprite.Color;
@@ -1159,17 +1177,21 @@ namespace Celeste
             if (OverrideHairColor != null)
                 Hair.Color = OverrideHairColor.Value;
 
+            //头发朝向
             Hair.Facing = Facing;
+            //头发模拟重力
             Hair.SimulateMotion = applyGravity;
             lastDashes = Dashes;
         }
-
+        
         private void UpdateSprite()
         {
+            //角色Scale Tween
             //Tween
             Sprite.Scale.X = Calc.Approach(Sprite.Scale.X, 1f, 1.75f * Engine.DeltaTime);
             Sprite.Scale.Y = Calc.Approach(Sprite.Scale.Y, 1f, 1.75f * Engine.DeltaTime);
 
+            //根据角色逻辑状态机和一些变量（移动速度、玩家输入等）播放对应动画
             //Animation
             if (InControl && Sprite.CurrentAnimationID != PlayerSprite.Throw && StateMachine.State != StTempleFall && 
                 StateMachine.State != StReflectionFall && StateMachine.State != StStarFly && StateMachine.State != StCassetteFly)
@@ -1351,10 +1373,11 @@ namespace Celeste
             level.Particles.Emit(P_Split, 16, Center, Vector2.One * 6);
         }
 
-        #endregion
+        #endregion 
 
         #region Getters
 
+        //相机焦点
         public Vector2 CameraTarget
         {
             get
@@ -1548,7 +1571,7 @@ namespace Celeste
         
         #endregion
 
-        #region Transitions
+        #region Transitions  作用暂不明确，估计是“传送、瞬移”？
 
         public void OnTransition()
         {
@@ -1626,7 +1649,7 @@ namespace Celeste
             dashCooldownTimer = 0.2f;
         }
 
-        #endregion
+        #endregion  
 
         #region Jumps 'n' Stuff
         
@@ -1662,8 +1685,10 @@ namespace Celeste
             }
         }
 
+        //通用跳跃
         public void Jump(bool particles = true, bool playSfx = true)
         {
+            //初始化计时器变量
             Input.Jump.ConsumeBuffer();
             jumpGraceTimer = 0;
             varJumpTimer = VarJumpTime;
@@ -1672,33 +1697,42 @@ namespace Celeste
             wallSlideTimer = WallSlideTime;
             wallBoostTimer = 0;
 
+            //跳跃修改速度变量
             Speed.X += JumpHBoost * moveX;
             Speed.Y = JumpSpeed;
             Speed += LiftBoost;
             varJumpSpeed = Speed.Y;
 
+            //检测发射跳跃
             LaunchedBoostCheck();
 
+            //跳跃音效
             if (playSfx)
             {
+                //发射：弹跳板或者助推器之类的音效
                 if (launched)
                     Play(Sfxs.char_mad_jump_assisted);
-
+                //梦幻跳跃
                 if (dreamJump)
                     Play(Sfxs.char_mad_jump_dreamblock);
+                //普通跳跃
                 else
                     Play(Sfxs.char_mad_jump);
             }
 
+            //跳跃帧动画缩放 （此处之于游戏手感设计上有待考究）
             Sprite.Scale = new Vector2(.6f, 1.4f);
+            //播放粒子特效
             if (particles)
                 Dust.Burst(BottomCenter, Calc.Up, 4);
-
+            //存档记录跳跃次数+1
             SaveData.Instance.TotalJumps++;
         }
 
+        //超级跳
         private void SuperJump()
         {
+            //初始化计时器变量
             Input.Jump.ConsumeBuffer();
             jumpGraceTimer = 0;
             varJumpTimer = VarJumpTime;
@@ -1707,10 +1741,12 @@ namespace Celeste
             wallSlideTimer = WallSlideTime;
             wallBoostTimer = 0;
 
+            //跳跃修改速度变量
             Speed.X = SuperJumpH * (int)Facing;
             Speed.Y = JumpSpeed;
             Speed += LiftBoost;
 
+            //超级跳只有普通地面跳跃（对比普通跳跃）
             Play(Sfxs.char_mad_jump);
 
             if (Ducking)
@@ -1725,11 +1761,11 @@ namespace Celeste
 
             varJumpSpeed = Speed.Y;
             launched = true;
-
+            //动画表现
             Sprite.Scale = new Vector2(.6f, 1.4f);
-
+            //灰尘粒子
             Dust.Burst(BottomCenter, Calc.Up, 4);
-
+            //跳跃记录+1
             SaveData.Instance.TotalJumps++;
         }
 
@@ -2093,6 +2129,7 @@ namespace Celeste
             return null;
         }
 
+        //Lift 升降机 
         private Vector2 LiftBoost
         {
             get
@@ -2113,8 +2150,9 @@ namespace Celeste
 
         #endregion
 
-        #region Ducking 闪避
+        #region Ducking （英文翻译：名词鸭子、动词躲避，经资料收集考证，应该是“下蹲状态”）
 
+        //是否处于下蹲状态
         public bool Ducking
         {
             get
@@ -2124,11 +2162,11 @@ namespace Celeste
 
             set
             {
+                //进入/退出下蹲状态要修改碰撞盒和受伤检测盒
                 if (value)
                 {
                     Collider = duckHitbox;
                     hurtbox = duckHurtbox;
-                    
                 }
                 else
                 {
@@ -2138,6 +2176,7 @@ namespace Celeste
             }
         }
 
+        //检测是否可以取消下蹲
         public bool CanUnDuck
         {
             get
@@ -2146,6 +2185,7 @@ namespace Celeste
                     return true;
 
                 Collider was = Collider;
+                //临时替换上普通碰撞盒检测是否有碰撞
                 Collider = normalHitbox;
                 bool ret = !CollideCheck<Solid>();
                 Collider = was;
@@ -2153,15 +2193,18 @@ namespace Celeste
             }
         }
 
+        //检测在指定位置是否可以取消下蹲
         public bool CanUnDuckAt(Vector2 at)
         {
             Vector2 was = Position;
+            //临时替换位置检测
             Position = at;
             bool ret = CanUnDuck;
             Position = was;
             return ret;
         }
 
+        //检测下蹲状态在指定位置是否有碰撞
         public bool DuckFreeAt(Vector2 at)
         {
             Vector2 oldP = Position;
@@ -2189,13 +2232,15 @@ namespace Celeste
 
         #endregion
 
-        #region Holding  抓取物体
+        #region Holding  抓取物
 
+        //抓取物
         public Holdable Holding
         {
             get; set;
         }
 
+        //逻辑帧：根据角色位置+偏移Carry抓取物
         public void UpdateCarry()
         {
             if (Holding != null)
@@ -2208,6 +2253,7 @@ namespace Celeste
             }
         }
 
+        //扑打：释放抓取物
         public void Swat(int dir)
         {
             if (Holding != null)
@@ -2217,6 +2263,7 @@ namespace Celeste
             }
         }
 
+        //拾取
         private bool Pickup(Holdable pickup)
         {
             if (pickup.Pickup(this))
@@ -2230,19 +2277,23 @@ namespace Celeste
                 return false;
         }
 
+        //扔掉
         private void Throw()
         {
             if (Holding != null)
             {
+                //原地放下
                 if (Input.MoveY.Value == 1)
                     Drop();
+                //向前仍出
                 else
                 {
                     Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
                     Holding.Release(Vector2.UnitX * (int)Facing);
+                    //后坐力
                     Speed.X += ThrowRecoil * -(int)Facing;
                 }
-
+                
                 Play(Sfxs.char_mad_crystaltheo_throw);
                 Sprite.Play("throw");
                 Holding = null;
@@ -2253,6 +2304,7 @@ namespace Celeste
         {
             if (Holding != null)
             {
+                //Rumble 此处代表震动反馈的意思吗？
                 Input.Rumble(RumbleStrength.Light, RumbleLength.Short);
                 Holding.Release(Vector2.Zero);
                 Holding = null;
@@ -2263,6 +2315,7 @@ namespace Celeste
 
         #region Physics
 
+        //作用暂不明
         public void StartJumpGraceTime()
         {
             jumpGraceTimer = JumpGraceTime;
@@ -2287,6 +2340,7 @@ namespace Celeste
             return StateMachine.State != StClimb && Speed.Y >= 0 && base.IsRiding(jumpThru);
         }
 
+        //下边缘碰撞检测
         public bool BounceCheck(float y)
         {
             return Bottom <= y + 3;
@@ -2367,8 +2421,10 @@ namespace Celeste
             //羽毛飞翔状态
             if (StateMachine.State == StStarFly)
             {
+                //此状态最后0.2s不处理弹性碰撞
                 if (starFlyTimer < StarFlyEndNoBounceTime)
                     Speed.X = 0;
+                //处理弹性碰撞音效、震动和墙体弹性碰撞
                 else
                 {
                     Play(Sfxs.game_06_feather_state_bump);
@@ -2378,7 +2434,7 @@ namespace Celeste
                 return;
             }
 
-            //梦境冲刺（最后一关上冲）
+            //梦境冲刺状态（最后一关上冲，不用处理水平碰撞）
             if (StateMachine.State == StDreamDash)
                 return;
 
@@ -2712,7 +2768,7 @@ namespace Celeste
             return false;
         }
 
-        //当碰撞到边界时
+        //当碰撞到边界时：速度分量设为0，状态机置为Normal
         public void OnBoundsH()
         {
             Speed.X = 0;
@@ -2729,10 +2785,11 @@ namespace Celeste
                 StateMachine.State = StNormal;
         }
 
-        //被压扁时
+        //被碰撞体挤压时（注意 此处覆写了Actor的方法）
         override protected void OnSquish(CollisionData data)
         {
             bool ducked = false;
+            //未下蹲状态
             if (!Ducking)
             {
                 ducked = true;
@@ -2766,6 +2823,7 @@ namespace Celeste
         #endregion
 
 
+        //状态机逻辑
 
         #region Normal State
 
