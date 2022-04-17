@@ -181,7 +181,7 @@ namespace Celeste
         public Leader Leader;
         public VertexLight Light;
         public int Dashes;
-        public float Stamina = ClimbMaxStamina;
+        public float Stamina = ClimbMaxStamina;     // 攀爬耐力
         public bool StrawberriesBlocked;
         public Vector2 PreviousPosition;
         public bool DummyAutoAnimate = true;
@@ -452,7 +452,7 @@ namespace Celeste
             //初始化冲刺变量
             lastDashes = Dashes = MaxDashes;
 
-            //特殊场景处理角色初始朝向
+            //非特殊场景，角色出生时如果角色在关卡右半部则角色朝，否则默认朝右
             if (X > level.Bounds.Center.X && IntroType != IntroTypes.None)
                 Facing = Facings.Left;
 
@@ -617,11 +617,12 @@ namespace Celeste
 
         public override void Update()
         {
-            //无限耐力
+            //刷新无限耐力
             //Infinite Stamina variant
             if (SaveData.Instance.AssistMode && SaveData.Instance.Assists.InfiniteStamina)
                 Stamina = ClimbMaxStamina;
             
+            // 记录前一帧位置
             PreviousPosition = Position;
 
             //Vars       
@@ -729,6 +730,7 @@ namespace Celeste
                 if (dashAttackTimer > 0)
                     dashAttackTimer -= Engine.DeltaTime;
 
+                //Grace:优雅、恩惠、恩典，查看该变量使用的代码上下文，其作用应该是让玩家在离开地面0.1s内仍然能够进行跳跃
                 //Jump Grace
                 if (onGround)
                 {
