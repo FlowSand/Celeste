@@ -2317,6 +2317,7 @@ namespace Celeste
 
         #region Physics
 
+        //作用暂不明
         public void StartJumpGraceTime()
         {
             jumpGraceTimer = JumpGraceTime;
@@ -2854,7 +2855,6 @@ namespace Celeste
 
         private int NormalUpdate()
         {
-            //电梯机的惯性力
             //Use Lift Boost if walked off platform
             if (LiftBoost.Y < 0 && wasOnGround && !onGround && Speed.Y >= 0)
                 Speed.Y = LiftBoost.Y;
@@ -2979,7 +2979,6 @@ namespace Celeste
                         fmf *= SpacePhysicsMult;
                     }
 
-                    //快速下落
                     //Fast Fall
                     if (Input.MoveY == 1 && Speed.Y >= mf)
                     {
@@ -3556,7 +3555,6 @@ namespace Celeste
                     CreateTrail();
             }
 
-            //冲刺过程中检测抓取物切换状态
             //Grab Holdables
             if (Holding == null && Input.Grab.Check && !IsTired && CanUnDuck)
             {
@@ -3836,6 +3834,8 @@ namespace Celeste
 
         #endregion
 
+
+        // 红、蓝色的冲刺球
         #region Boost State
 
         private Vector2 boostTarget;
@@ -3903,6 +3903,7 @@ namespace Celeste
 
         #endregion
 
+        // Red Dash会不会是冲刺球？
         #region Red Dash State
 
         private void RedDashBegin()
@@ -4049,6 +4050,8 @@ namespace Celeste
 
         #endregion
 
+
+        // 这两个Launch状态看起来是吃到Badline球之后的上升
         #region Launch State
 
         private float? launchApproachX;
@@ -4197,6 +4200,8 @@ namespace Celeste
         }
 
         #endregion
+
+
 
         #region Pickup State
 
@@ -4382,7 +4387,9 @@ namespace Celeste
 
         #endregion
 
-        #region Star Fly State
+
+
+        #region Star Fly State 吃羽毛后飞翔状态
 
         private const float StarFlyTransformDeccel = 1000f;
         private const float StarFlyTime = 2f;
@@ -4687,7 +4694,7 @@ namespace Celeste
 
         #endregion
 
-        #region Cassette Fly State
+        #region Cassette Fly State 收集到磁带后气泡包裹飞回关卡入口
 
         private SimpleCurve cassetteFlyCurve;
         private float cassetteFlyLerp;
@@ -4752,7 +4759,7 @@ namespace Celeste
 
         #endregion
 
-        #region Attract State
+        #region Attract State 吸引到某个位置，看代码是第六关Boss战斗的逻辑中会调用
 
         private Vector2 attractTo;
 
@@ -4800,7 +4807,9 @@ namespace Celeste
 
         #endregion
 
-        #region Dummy State
+       
+        // 以下一些状态，如果是存在公共接口则外部直接调用，另一部分是私有访问，注册到StateMachine后，在Cutscene会直接调用player.StateMachine.state = 00的方式切换到目标状态
+        #region Dummy State 
 
         public bool DummyMoving = false;
         public bool DummyGravity = true;
@@ -4968,7 +4977,7 @@ namespace Celeste
 
         #endregion
 
-        #region Frozen State
+        #region Frozen State 
         
         private int FrozenUpdate()
         {
@@ -4977,7 +4986,7 @@ namespace Celeste
 
         #endregion
 
-        #region Temple Fall State
+        #region Temple Fall State 
         
         private int TempleFallUpdate()
         {
@@ -5030,7 +5039,7 @@ namespace Celeste
 
         #endregion
 
-        #region Reflection Fall State
+        #region Reflection Fall State 
 
         private void ReflectionFallBegin()
         {
