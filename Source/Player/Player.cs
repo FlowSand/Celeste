@@ -2317,7 +2317,6 @@ namespace Celeste
 
         #region Physics
 
-        //作用暂不明
         public void StartJumpGraceTime()
         {
             jumpGraceTimer = JumpGraceTime;
@@ -2855,6 +2854,7 @@ namespace Celeste
 
         private int NormalUpdate()
         {
+            //电梯机的惯性力
             //Use Lift Boost if walked off platform
             if (LiftBoost.Y < 0 && wasOnGround && !onGround && Speed.Y >= 0)
                 Speed.Y = LiftBoost.Y;
@@ -2979,6 +2979,7 @@ namespace Celeste
                         fmf *= SpacePhysicsMult;
                     }
 
+                    //快速下落
                     //Fast Fall
                     if (Input.MoveY == 1 && Speed.Y >= mf)
                     {
@@ -3555,6 +3556,7 @@ namespace Celeste
                     CreateTrail();
             }
 
+            //冲刺过程中检测抓取物切换状态
             //Grab Holdables
             if (Holding == null && Input.Grab.Check && !IsTired && CanUnDuck)
             {
