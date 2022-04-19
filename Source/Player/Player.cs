@@ -760,6 +760,7 @@ namespace Celeste
                     }
                 }
 
+                //难道这个变量Jump，处理的是长按跳？
                 //Var Jump
                 if (varJumpTimer > 0)
                     varJumpTimer -= Engine.DeltaTime;
@@ -3115,6 +3116,7 @@ namespace Celeste
             }
         }
 
+        //根据体力播放流汗表情
         private void PlaySweatEffectDangerOverride(string state)
         {
             if (Stamina <= ClimbTiredThreshold)
@@ -3179,6 +3181,7 @@ namespace Celeste
             if (onGround)
                 Stamina = ClimbMaxStamina;
 
+            //攀爬跳或弹墙跳
             //Wall Jump
             if (Input.Jump.Pressed && (!Ducking || CanUnDuck))
             {
@@ -3190,6 +3193,7 @@ namespace Celeste
                 return StNormal;
             }
 
+            //冲刺：附加平台给予的托举力
             //Dashing
             if (CanDash)
             {
@@ -3197,6 +3201,7 @@ namespace Celeste
                 return StartDash();
             }
 
+            //松开抓取键
             //Let go
             if (!Input.Grab.Check)
             {
@@ -3205,17 +3210,20 @@ namespace Celeste
                 return StNormal;
             }
 
+            //抓取移动到平台顶部边缘
             //No wall to hold
             if (!CollideCheck<Solid>(Position + Vector2.UnitX * (int)Facing))
             {
                 //Climbed over ledge?
                 if (Speed.Y < 0)
                 {
+                    //惯性抬升
                     if (wallBoosting)
                     {
                         Speed += LiftBoost;
                         Play(Sfxs.char_mad_grab_letgo);
                     }
+                    //自动登上平台
                     else
                         ClimbHop();
                 }
@@ -3707,7 +3715,7 @@ namespace Celeste
 
         #endregion
 
-        #region Swim State
+        #region Swim State 沉思6-2关卡开始有湖水，可以测试这段代码的逻辑
 
         private const float SwimYSpeedMult = .5f;    
         private const float SwimMaxRise = -60;
@@ -3813,6 +3821,7 @@ namespace Celeste
                 }
             }
 
+            //水面漂浮移动时自动爬上浅水面的平台上
             //Popping up onto ledge
             const int ledgePopDist = -3;
             if (!underwater && moveX != 0
@@ -4203,17 +4212,19 @@ namespace Celeste
 
 
 
-        #region Pickup State
+        #region Pickup State 捡起物品，主要用于神庙关卡捡起Theo
 
         private IEnumerator PickupCoroutine()
         {
             Play(Sfxs.char_mad_crystaltheo_lift);
             Input.Rumble(RumbleStrength.Medium, RumbleLength.Short);
 
+            // 拾取动画播放期间角色位置停顿
             Vector2 oldSpeed = Speed;
             float varJump = varJumpTimer;
             Speed = Vector2.Zero;
 
+            // 捡起的动作宝石动画曲线
             Vector2 begin = Holding.Entity.Position - Position;
             Vector2 end = CarryOffsetTarget;
             Vector2 control = new Vector2(begin.X + Math.Sign(begin.X) * 2, CarryOffsetTarget.Y - 2);
@@ -4228,6 +4239,7 @@ namespace Celeste
             Add(tween);
             yield return tween.Wait();
 
+            // 播放结束之后恢复速度和外作用力，Y轴速度保持向上的速度，移除向下的速度（所以会有种从这一瞬间角色才开始下落的手感，如果是上冲则播放完动作后，冲刺速度维持）
             Speed = oldSpeed;
             Speed.Y = Math.Min(Speed.Y, 0);
             varJumpTimer = varJump;
@@ -4236,7 +4248,7 @@ namespace Celeste
 
         #endregion
 
-        #region Dream Dash State
+        #region Dream Dash State 第二关在梦境果冻中冲刺
 
         private DreamBlock dreamBlock;
         private SoundSource dreamSfxLoop;
@@ -4694,7 +4706,7 @@ namespace Celeste
 
         #endregion
 
-        #region Cassette Fly State 收集到磁带后气泡包裹飞回关卡入口
+        #region Cassette Fly State 收集到磁带、钥匙后气泡包裹飞回关卡入口
 
         private SimpleCurve cassetteFlyCurve;
         private float cassetteFlyLerp;
