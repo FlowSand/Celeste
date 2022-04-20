@@ -641,15 +641,17 @@ namespace Celeste
                 else if (Speed.X != 0 || Speed.Y != 0)
                     idleTimer = 0;
 
+                // 在水下环境时，改变音效效果
                 //Underwater music
                 if (!Dead)
                     Audio.MusicUnderwater = UnderwaterMusicCheck();
 
+                // 刚出生未移动时要进行标记（此时不受风阻影响，boss也不会攻击）
                 //Just respawned
                 if (JustRespawned && Speed != Vector2.Zero)
                     JustRespawned = false;
 
-                //接触地面（安全区）检测
+                //检测接触地面&安全
                 //Get ground
                 if (StateMachine.State == StDreamDash)
                     onGround = OnSafeGround = false;
@@ -1010,6 +1012,7 @@ namespace Celeste
             //Carry held item
             UpdateCarry();
 
+            // 检测与场景中的触发器物件发生交互
             //Triggers
             if (StateMachine.State != StReflectionFall)
             {
@@ -1037,6 +1040,7 @@ namespace Celeste
             //Strawberry Block
             StrawberriesBlocked = CollideCheck<BlockField>();
 
+            // 更新镜头移动
             // Camera (lerp by distance using delta-time)
             if (InControl || ForceCameraUpdate)
             {
@@ -1076,13 +1080,17 @@ namespace Celeste
                     Collider = was;
             }
             
+            // 关卡对角色进行边界限制
             //Bounds
             if (InControl && !Dead && StateMachine.State != StDreamDash)
                 level.EnforceBounds(this);
 
             UpdateChaserStates();
+
+            // 更新发型表现
             UpdateHair(true);
 
+            // 下蹲状态切换音效
             //Sounds on ducking state change
             if (wasDucking != Ducking)
             {
@@ -1105,6 +1113,7 @@ namespace Celeste
             wasOnGround = onGround;
         }
 
+        // 创建冲刺拖尾效果
         private void CreateTrail()
         {
             TrailManager.Add(this, wasDashB ? NormalHairColor : UsedHairColor);
@@ -1136,7 +1145,7 @@ namespace Celeste
 
 
 
-        #region Hair & Sprite 
+        #region Hair & Sprite 根据状态机和一些相关本地参数更新角色的头发、Sprite表现
 
         private void StartHair()
         {
@@ -1189,7 +1198,7 @@ namespace Celeste
         
         private void UpdateSprite()
         {
-            //角色Scale Tween
+            //角色Scale Tween还原
             //Tween
             Sprite.Scale.X = Calc.Approach(Sprite.Scale.X, 1f, 1.75f * Engine.DeltaTime);
             Sprite.Scale.Y = Calc.Approach(Sprite.Scale.Y, 1f, 1.75f * Engine.DeltaTime);
@@ -1390,24 +1399,29 @@ namespace Celeste
                 if (StateMachine.State != StReflectionFall)
                     target += new Vector2(level.CameraOffset.X, level.CameraOffset.Y);
 
+                //羽毛飞舞时镜头根据速度方向聚焦
                 if (StateMachine.State == StStarFly)
                 {
                     target.X += .2f * Speed.X;
                     target.Y += .2f * Speed.Y;
                 }
+                // 红色冲刺状态在方向上进行聚焦
                 else if (StateMachine.State == StRedDash)
                 {
                     target.X += 48 * Math.Sign(Speed.X);
                     target.Y += 48 * Math.Sign(Speed.Y);
                 }
+                //飞升状态镜头向上偏移
                 else if (StateMachine.State == StSummitLaunch)
                 {
                     target.Y -= 64;
                 }
+                //沉思掉落状态镜头向下偏移
                 else if (StateMachine.State == StReflectionFall)
                 {
                     target.Y += 32;
                 }
+
 
                 if (CameraAnchorLerp.Length() > 0)
                 {
@@ -1574,7 +1588,7 @@ namespace Celeste
         
         #endregion
 
-        #region Transitions  作用暂不明确，估计是“传送、瞬移”？
+        #region Transitions  关卡地图间传送，主要由Level对象调用
 
         public void OnTransition()
         {
@@ -2318,12 +2332,12 @@ namespace Celeste
 
         #region Physics
 
-        //作用暂不明
         public void StartJumpGraceTime()
         {
             jumpGraceTimer = JumpGraceTime;
         }
 
+        // 是否吸附在一些固体上
         public override bool IsRiding(Solid solid)
         {
             if (StateMachine.State == StDreamDash)
@@ -2335,6 +2349,7 @@ namespace Celeste
             return base.IsRiding(solid);
         }
 
+        // 
         public override bool IsRiding(JumpThru jumpThru)
         {
             if (StateMachine.State == StDreamDash)
@@ -2343,7 +2358,7 @@ namespace Celeste
             return StateMachine.State != StClimb && Speed.Y >= 0 && base.IsRiding(jumpThru);
         }
 
-        //下边缘碰撞检测
+        //检测下边缘是否比某个Y值低（即在某个平面之上）
         public bool BounceCheck(float y)
         {
             return Bottom <= y + 3;
@@ -2437,7 +2452,7 @@ namespace Celeste
                 return;
             }
 
-            //梦境冲刺状态（最后一关上冲，不用处理水平碰撞）
+            //梦境气泡冲刺状态
             if (StateMachine.State == StDreamDash)
                 return;
 
@@ -2779,7 +2794,6 @@ namespace Celeste
             if (StateMachine.State == StRedDash)
                 StateMachine.State = StNormal;
         }
-
         public void OnBoundsV()
         {
             Speed.Y = 0;
@@ -3844,7 +3858,7 @@ namespace Celeste
         #endregion
 
 
-        // 红、蓝色的冲刺球
+        // 仅用于红、蓝色的冲刺球
         #region Boost State
 
         private Vector2 boostTarget;
@@ -3912,7 +3926,7 @@ namespace Celeste
 
         #endregion
 
-        // Red Dash会不会是冲刺球？
+        // 红球Boost过程中行为
         #region Red Dash State
 
         private void RedDashBegin()
@@ -4012,6 +4026,7 @@ namespace Celeste
 
         #endregion
 
+        // 暂未搞懂什么意思
         #region Hit Squash State
 
         private const float HitSquashNoMoveTime = .1f;
@@ -4060,11 +4075,12 @@ namespace Celeste
         #endregion
 
 
-        // 这两个Launch状态看起来是吃到Badline球之后的上升
+        // 用于碰撞被弹开的行为
         #region Launch State
 
         private float? launchApproachX;
 
+        //用于神庙眼球、刺豚鱼、圆脸球的弹开行为
         public Vector2 ExplodeLaunch(Vector2 from, bool snapUp = true)
         {
             Input.Rumble(RumbleStrength.Strong, RumbleLength.Medium);
@@ -4107,6 +4123,7 @@ namespace Celeste
             return normal;
         }
 
+        //FinalBoss碰撞后弹开玩家
         public void FinalBossPushLaunch(int dir)
         {
             launchApproachX = null;
@@ -4122,6 +4139,7 @@ namespace Celeste
             StateMachine.State = StLaunch;
         }
 
+        //Badline飞升球体
         public void BadelineBoostLaunch(float atX)
         {
             launchApproachX = atX;
@@ -4166,6 +4184,7 @@ namespace Celeste
 
         #endregion
 
+        // 通关时吃球飞升
         #region Summit Launch State
 
         private float summitLaunchTargetX;
@@ -5453,6 +5472,7 @@ namespace Celeste
 
         #endregion
 
+        // Badline追逐状态管理
         #region Chaser State Tracking
 
         public FMOD.Studio.EventInstance Play(string sound, string param = null, float value = 0)
