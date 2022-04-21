@@ -181,7 +181,7 @@ namespace Celeste
         public Leader Leader;
         public VertexLight Light;
         public int Dashes;
-        public float Stamina = ClimbMaxStamina;     // 攀爬耐力
+        public float Stamina = ClimbMaxStamina;
         public bool StrawberriesBlocked;
         public Vector2 PreviousPosition;
         public bool DummyAutoAnimate = true;
@@ -299,28 +299,31 @@ namespace Celeste
         public Player(Vector2 position, PlayerSpriteMode spriteMode)
             : base(new Vector2((int)position.X, (int)position.Y))
         {
-            //设置深度和Tag
+            // 设置深度和Tag
             Depth = Depths.Player;
             Tag = Tags.Persistent;
 
-            //Sprite 和头发组件
+            // 添加Sprite和Hair组件
             Sprite = new PlayerSprite(spriteMode);
             Add(Hair = new PlayerHair(Sprite));
             Add(Sprite);
             Hair.Color = NormalHairColor;
             startHairCount = Sprite.HairCount;
 
+            // 冒汗表情Sprite
             // sweat sprite
             sweatSprite = GFX.SpriteBank.Create("player_sweat");
             Add(sweatSprite);
 
-            // physics （物理碰撞盒和碰撞委托方法）
+            // 物理碰撞盒和碰撞委托方法
+            // physics
             Collider = normalHitbox;
             hurtbox = normalHurtbox;
             onCollideH = OnCollideH;
             onCollideV = OnCollideV;
 
-            // states （角色状态机）
+            // 注册角色状态机
+            // states
             StateMachine = new StateMachine(23);
             StateMachine.SetCallbacks(StNormal, NormalUpdate, null, NormalBegin, NormalEnd);
             StateMachine.SetCallbacks(StClimb, ClimbUpdate, null, ClimbBegin, ClimbEnd);
@@ -347,27 +350,28 @@ namespace Celeste
             StateMachine.SetCallbacks(StAttract, AttractUpdate, null, AttractBegin, AttractEnd);
             Add(StateMachine);
 
-            // other stuff （零碎组件和变量初始化）
+            // other stuff
             Add(Leader = new Leader(new Vector2(0, -8)));
             lastAim = Vector2.UnitX;
-            Facing = Facings.Right;
+            Facing = Facings.Right;     // 默认朝右
             chaserStates = new List<ChaserState>();
             triggersInside = new HashSet<Trigger>();
             Add(Light = new VertexLight(normalLightOffset, Color.White, 1f, 32, 64));
             Add(new WaterInteraction(() => { return StateMachine.State == StDash || StateMachine.State == StReflectionFall; }));
 
-            //Wind  （风力影响组件）
+            // Wind
             Add(new WindMover(WindMove));
-            //音源组件
+
+            // 音源组件
             Add(wallSlideSfx = new SoundSource());
             Add(swimSurfaceLoopSfx = new SoundSource());
             
+            // 动画帧时间
             Sprite.OnFrameChange = (anim) =>
             {
-                //精确配合动画帧播放音效
                 if (Scene != null && !Dead)
                 {
-                    // footsteps （madline 脚步音效）
+                    // footsteps
                     var frame = Sprite.CurrentAnimationFrame;
                     if ((anim.Equals(PlayerSprite.RunCarry) && (frame == 0 || frame == 6)) ||
                         (anim.Equals(PlayerSprite.RunFast) && (frame == 0 || frame == 6)) ||
@@ -383,7 +387,7 @@ namespace Celeste
                         if (landed != null)
                             Play(Sfxs.char_mad_footstep, SurfaceIndex.Param, landed.GetStepSoundIndex(this));
                     }
-                    // climbing (holds) （攀爬音效）
+                    // climbing (holds)
                     else if ((anim.Equals(PlayerSprite.ClimbUp) && (frame == 5)) ||
                         (anim.Equals(PlayerSprite.ClimbDown) && (frame == 5)))
                     {
@@ -395,12 +399,12 @@ namespace Celeste
                         Play(Sfxs.char_mad_campfire_stand);
                     else if (anim.Equals("sitDown") && frame == 12)
                         Play(Sfxs.char_mad_summit_sit);
-                    //冲撞方块音效
                     else if (anim.Equals("push") && (frame == 8 || frame == 15))
                         Dust.BurstFG(Position + new Vector2(-(int)Facing * 5, -1), new Vector2(-(int)Facing, -0.5f).Angle(), 1, 0);
                 }
             };
 
+            // 动画结束事件
             Sprite.OnLastFrame = (anim) =>
             {
                 // 角色长时间Idle后，随机播放一些动画
@@ -408,7 +412,7 @@ namespace Celeste
                 {
                     if (Calc.Random.Chance(0.2f))
                     {
-                        //山之核心关卡 有0.2的概率播放mad_line 炎热、寒冷的动画及音效
+                        // 山之核心关卡 有0.2的概率播放mad_line 炎热、寒冷的动画及音效
                         var next = "";
                         if (Sprite.Mode == PlayerSpriteMode.Madeline)
                             next = (level.CoreMode == Session.CoreModes.Hot ? idleWarmOptions : idleColdOptions).Choose();
@@ -433,31 +437,32 @@ namespace Celeste
                 }
             };
 
-            // idle动画改变时，停止对应的特殊音效播放
+            // 切换动画事件，停止一些idle sfx
             // cancel special idle sounds if the anim changed
             Sprite.OnChange = (last, next) =>
             {
                 if ((last == "idleB" || last == "idleC") && next != null && !next.StartsWith("idle") && idleSfx != null)
                     Audio.Stop(idleSfx);
             };
-            //镜面反射组件
+
+            // 镜面反射组件
             Add(reflection = new MirrorReflection());
         }
 
-        //当角色被添加到场景时
+        // 当角色被添加到场景时
         public override void Added(Scene scene)
         {
             base.Added(scene);
             level = SceneAs<Level>();
 
-            //初始化冲刺变量
+            // 初始化冲刺次数
             lastDashes = Dashes = MaxDashes;
 
-            //非特殊场景，角色出生时如果角色在关卡右半部则角色朝，否则默认朝右
+            // 非特殊场景，角色出生时如果角色在关卡右半部则角色朝，否则默认朝右
             if (X > level.Bounds.Center.X && IntroType != IntroTypes.None)
                 Facing = Facings.Left;
 
-            //处理角色初始化在关卡时的动画表现
+            // 处理角色初始化在关卡时的动画表现
             switch (IntroType)
             {
                 case IntroTypes.Respawn:
@@ -515,6 +520,7 @@ namespace Celeste
             DummyGravity = false;
         }
 
+        // 当角色从场景中移除时
         public override void Removed(Scene scene)
         {
             base.Removed(scene);
@@ -528,6 +534,7 @@ namespace Celeste
             }
         }
 
+        // 场景结束时
         public override void SceneEnd(Scene scene)
         {
             base.SceneEnd(scene);
@@ -544,14 +551,13 @@ namespace Celeste
             var was = Sprite.RenderPosition;
             Sprite.RenderPosition = Sprite.RenderPosition.Floor();
 
-            //重生
+            // 重生
             if (StateMachine.State == StIntroRespawn)
             {
                 DeathEffect.Draw(Center + deadOffset, Hair.Color, introEase);
             }
             else
             {
-                //羽毛飞舞
                 if (StateMachine.State != StStarFly)
                 {
                     if (IsTired && flash)
@@ -560,6 +566,7 @@ namespace Celeste
                         Sprite.Color = Color.White;
                 }
 
+                // 根据角色朝向设置Sprite和Hair的朝向
                 // set up scale
                 if (reflection.IsRendering && FlipInReflection)
                 {
@@ -568,6 +575,7 @@ namespace Celeste
                 }
                 Sprite.Scale.X *= (int)Facing;
 
+                // 刷新表情朝向
                 // sweat scale
                 if (sweatSprite.LastAnimationID == "idle")
                     sweatSprite.Scale = Sprite.Scale;
@@ -580,6 +588,7 @@ namespace Celeste
                 // draw
                 base.Render();
 
+                // 开始羽毛飞舞时，绘制一个白色剪影
                 // star fly transform
                 if (Sprite.CurrentAnimationID == PlayerSprite.StartStarFly)
                 {
@@ -600,7 +609,7 @@ namespace Celeste
             Sprite.RenderPosition = was;
         }
 
-        //Debug绘制模式，只绘制受伤碰撞盒
+        // Debug绘制模式，只绘制受伤碰撞盒
         public override void DebugRender(Camera camera)
         {
             base.DebugRender(camera);
@@ -652,7 +661,7 @@ namespace Celeste
                 if (JustRespawned && Speed != Vector2.Zero)
                     JustRespawned = false;
 
-                //检测接触地面&安全
+                // 检测接触地面&&安全区域
                 //Get ground
                 if (StateMachine.State == StDreamDash)
                     onGround = OnSafeGround = false;
@@ -837,7 +846,7 @@ namespace Celeste
                         wallSpeedRetentionTimer -= Engine.DeltaTime;
                 }
 
-                //Hop Wait X
+                // Hop Wait X
                 if (hopWaitX != 0)
                 {
                     if (Math.Sign(Speed.X) == -hopWaitX || Speed.Y > 0)
@@ -921,7 +930,7 @@ namespace Celeste
                     launchedTimer = 0;
             }
 
-            //劳累状态
+            // 劳累状态
             if (IsTired)
             {
                 Input.Rumble(RumbleStrength.Light, RumbleLength.Short);
@@ -935,16 +944,19 @@ namespace Celeste
 
             base.Update();
             
+            // 角色氛围光
             //Light Offset
             if (Ducking)
                 Light.Position = duckingLightOffset;
             else
                 Light.Position = normalLightOffset;
 
+            // 单向平台辅助：非攀爬状态&非空中状态下，检测到在单向附近上升，则将玩家吸上去
             //Jump Thru Assist
             if (!onGround && Speed.Y <= 0 && (StateMachine.State != StClimb || lastClimbMove == -1) && CollideCheck<JumpThru>() && !JumpThruBoostBlockedCheck())
                 MoveV(JumpThruAssistSpeed * Engine.DeltaTime);
 
+            // 横向冲刺到拐角时的校正行为
             //Dash Floor Snapping
             if (!onGround && DashAttacking && DashDir.Y == 0)
             {
@@ -952,10 +964,12 @@ namespace Celeste
                     MoveVExact(DashVFloorSnapDist);
             }
 
+            // 下落时取消下蹲状态
             //Falling unducking
             if (Speed.Y > 0 && CanUnDuck && Collider != starFlyHitbox && !onGround)
                 Ducking = false;
 
+            // 应用速度变量来计算新的位置
             //Physics
             if (StateMachine.State != StDreamDash && StateMachine.State != StAttract)
                 MoveH(Speed.X * Engine.DeltaTime, onCollideH);
