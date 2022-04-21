@@ -403,11 +403,12 @@ namespace Celeste
 
             Sprite.OnLastFrame = (anim) =>
             {
-                //山之核心关卡 有0.2的概率播放mad_line 炎热、寒冷的动画及音效
+                // 角色长时间Idle后，随机播放一些动画
                 if (Scene != null && !Dead && Sprite.CurrentAnimationID == "idle" && !level.InCutscene && idleTimer > 3f)
                 {
                     if (Calc.Random.Chance(0.2f))
                     {
+                        //山之核心关卡 有0.2的概率播放mad_line 炎热、寒冷的动画及音效
                         var next = "";
                         if (Sprite.Mode == PlayerSpriteMode.Madeline)
                             next = (level.CoreMode == Session.CoreModes.Hot ? idleWarmOptions : idleColdOptions).Choose();
@@ -539,6 +540,7 @@ namespace Celeste
 
         public override void Render()
         {
+            // 精灵RenderPosition像素对齐
             var was = Sprite.RenderPosition;
             Sprite.RenderPosition = Sprite.RenderPosition.Floor();
 
@@ -617,7 +619,7 @@ namespace Celeste
 
         public override void Update()
         {
-            //刷新无限耐力
+            // 检测辅助模式无限体力
             //Infinite Stamina variant
             if (SaveData.Instance.AssistMode && SaveData.Instance.Assists.InfiniteStamina)
                 Stamina = ClimbMaxStamina;
@@ -627,7 +629,6 @@ namespace Celeste
 
             //Vars       
             {
-                //草莓收集重置计时器
                 // strawb reset timer
                 StrawberryCollectResetTimer -= Engine.DeltaTime;
                 if (StrawberryCollectResetTimer <= 0)
@@ -638,7 +639,7 @@ namespace Celeste
                 idleTimer += Engine.DeltaTime;
                 if (level != null && level.InCutscene)
                     idleTimer = -5;
-                else if (Speed.X != 0 || Speed.Y != 0)
+                else if (Speed.X != 0 || Speed.Y != 0)  // 速度不为0则取消Idle
                     idleTimer = 0;
 
                 // 在水下环境时，改变音效效果
@@ -657,6 +658,7 @@ namespace Celeste
                     onGround = OnSafeGround = false;
                 else if (Speed.Y >= 0)
                 {
+                    // 检测下方一单位的地块是否为固体或者单向平台
                     Platform first = CollideFirst<Solid>(Position + Vector2.UnitY);
                     if (first == null)
                         first = CollideFirstOutside<JumpThru>(Position + Vector2.UnitY);
@@ -675,6 +677,7 @@ namespace Celeste
                 if (StateMachine.State == StSwim)
                     OnSafeGround = true;
 
+                // 检测是否在非安全区域区块中  
                 //Safe Ground Blocked?
                 if (OnSafeGround)
                 {
@@ -1119,6 +1122,7 @@ namespace Celeste
             TrailManager.Add(this, wasDashB ? NormalHairColor : UsedHairColor);
         }
 
+        // 清理已触发的触发器
         public void CleanUpTriggers()
         {
             if (triggersInside.Count > 0)
