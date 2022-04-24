@@ -700,14 +700,17 @@ namespace Celeste
                     }
                 }
 
+                // 控制落地和走路音效的播放，目前主要用在自动弹起到平台部分的逻辑
                 playFootstepOnLand -= Engine.DeltaTime;
 
+                // ???
                 //Highest Air Y
                 if (onGround)
                     highestAirY = Y;
                 else
                     highestAirY = Math.Min(Y, highestAirY);
 
+                // 体力耗尽时角色闪烁
                 //Flashing
                 if (Scene.OnInterval(.05f))
                     flash = !flash;
@@ -740,6 +743,7 @@ namespace Celeste
                     wallSlideTimer = WallSlideTime;
                 }
 
+                //冲刺动作后的一段时间内
                 //Dash Attack
                 if (dashAttackTimer > 0)
                     dashAttackTimer -= Engine.DeltaTime;
@@ -902,10 +906,12 @@ namespace Celeste
                 else if (StateMachine.State != StStarFly)
                     Sprite.HairCount = (Dashes > 1 ? 5 : startHairCount);
 
+                // 抓取一件物品的最小持有时间，小于该时间不能扔掉
                 //Min Hold Time
                 if (minHoldTimer > 0)
                     minHoldTimer -= Engine.DeltaTime;
 
+                // 被弹射出去时，根据速度和方向添加一个环状的特效
                 //Launch Particles
                 if (launched)
                 {
@@ -930,7 +936,7 @@ namespace Celeste
                     launchedTimer = 0;
             }
 
-            // 劳累状态
+            // 劳累状态标识位
             if (IsTired)
             {
                 Input.Rumble(RumbleStrength.Light, RumbleLength.Short);
@@ -944,7 +950,7 @@ namespace Celeste
 
             base.Update();
             
-            // 角色氛围光
+            // 角色氛围光偏移调整
             //Light Offset
             if (Ducking)
                 Light.Position = duckingLightOffset;
@@ -1007,6 +1013,7 @@ namespace Celeste
                     StateMachine.State = StSwim;
             }
 
+            // 墙体下滑音效
             // wall slide SFX
             {
                 var isSliding = Sprite.CurrentAnimationID != null && Sprite.CurrentAnimationID.Equals(PlayerSprite.WallSlide) && Speed.Y > 0;
@@ -2376,7 +2383,7 @@ namespace Celeste
             return StateMachine.State != StClimb && Speed.Y >= 0 && base.IsRiding(jumpThru);
         }
 
-        //检测下边缘是否比某个Y值低（即在某个平面之上）
+        // 检测下边缘是否比某个Y值低（即在某个平面之上）
         public bool BounceCheck(float y)
         {
             return Bottom <= y + 3;
