@@ -1338,6 +1338,7 @@ namespace Celeste
                         {
                             Sprite.Play(PlayerSprite.RunCarry);
                         }
+                        // 当水平有移动时，速度和输入方向相反时，播放打滑或转身动画
                         else if (Math.Sign(Speed.X) == -moveX && moveX != 0)
                         {
                             if (Math.Abs(Speed.X) > MaxRun)
